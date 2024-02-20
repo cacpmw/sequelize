@@ -1,5 +1,6 @@
 const { Op } = require("sequelize");
 const { sequelize } = require("../model");
+const RequestError = require("../exceptions/RequestError");
 
 class PayJobController {
     static async Store(req, res) {
@@ -10,9 +11,7 @@ class PayJobController {
         const { role } = profile;
 
         if (role !== "ClientId") {
-            return res.status(401).send({
-                error: "Only clients are able to make payments"
-            })
+            throw new RequestError("Only clients are able to make payments", 401)
         }
 
         const job = await Job.findOne({
@@ -33,13 +32,10 @@ class PayJobController {
 
 
         });
-        if (!job) return res.status(404).end();
+        if (!job) throw new RequestError("Not Found", 404)
 
-        if (job.price > profile.balance) {
-            return res.status(422).send({
-                error: "Insufficient Balance"
-            })
-        }
+        if (job.price > profile.balance) throw new RequestError("Insufficient Balance", 422);
+
         const transaction = await sequelize.transaction();
 
         try {
@@ -61,7 +57,7 @@ class PayJobController {
         } catch (error) {
             console.error(`An error occurred: ${JSON.stringify(error)}`);
             await transaction.rollback();
-            return res.status(500).end()
+            throw new RequestError("Internal Server Error", 500)
         }
 
         res.json(job)

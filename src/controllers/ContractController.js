@@ -1,4 +1,5 @@
 const { Op } = require("sequelize");
+const RequestError = require("../exceptions/RequestError");
 
 class ContractController {
 
@@ -17,7 +18,7 @@ class ContractController {
             }
         });
 
-        if (!contracts) return res.status(404).end()
+        if (!contracts) throw new RequestError("Not Found", 404);
         res.json(contracts)
     }
 
@@ -33,7 +34,7 @@ class ContractController {
                 [role]: profile.id
             }
         })
-        if (!contract) return res.status(404).end()
+        if (!contract) throw new RequestError("Not Found", 404);
         res.json(contract)
     }
 

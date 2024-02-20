@@ -1,4 +1,5 @@
 const { Op } = require("sequelize");
+const RequestError = require("../exceptions/RequestError");
 
 class UnpaidJobController {
 
@@ -32,7 +33,7 @@ class UnpaidJobController {
 
 
         });
-        if (!jobs) return res.status(404).end()
+        if (!jobs) throw new RequestError("Not Found", 404)
 
         const unpaidJobs = jobs.map((current) => (
             {

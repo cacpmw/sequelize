@@ -10,6 +10,6 @@ const routes = Router();
 routes.use('/contracts', contractRouter)
 routes.use('/jobs', jobRouter )
 routes.use('/balances', balanceRouter)
-routes.use("/admin", adminRouter)
+routes.use('/admin', adminRouter)
 
 module.exports = { routes };

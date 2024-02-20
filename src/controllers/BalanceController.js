@@ -1,5 +1,6 @@
 const { Op } = require("sequelize");
 const { sequelize } = require("../model");
+const RequestError = require("../exceptions/RequestError");
 
 class BalanceController {
 
@@ -8,20 +9,11 @@ class BalanceController {
         const { user_id } = req.params
         const amount = Number(req.get("amount"));
 
-        if (Number.isNaN(amount)) {
-            return res.status(400).send({
-                error: "Amount must be a number"
-            })
-        }
         const userProfile = await Profile.findByPk(user_id)
 
         if (!userProfile) return res.status(404).end()
 
-        if (userProfile.type !== "client") {
-            return res.status(401).send({
-                error: "Only clients are able to make deposits"
-            })
-        }
+        if (userProfile.type !== "client") throw new RequestError("Only clients are able to make deposits", 401);
 
         const jobs = await Job.findAll({
             include: {
@@ -44,11 +36,7 @@ class BalanceController {
             userProfile.balance += amount;
         } else {
             const sum = jobs.reduce((total, item) => (total + item.price), 0)
-            if (amount > (sum * 0.25)) {
-                return res.status(422).send({
-                    error: "Can't deposit more than 25% of total jobs to pay"
-                })
-            }
+            if (amount > (sum * 0.25)) throw new RequestError("Can't deposit more than 25% of total jobs to pay", 422);
         }
 
         const transaction = await sequelize.transaction();
