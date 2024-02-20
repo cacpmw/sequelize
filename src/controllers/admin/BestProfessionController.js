@@ -1,37 +1,14 @@
-const { Op } = require("sequelize");
-const { sequelize } = require('../../model');
+const FindTheBestProfessionService = require("../../Services/FindTheBestProfessionService");
+const RequestError = require("../../exceptions/RequestError");
 
 
 class BestProfessionController {
 
     static async Index(req, res) {
-        const { Job, Contract, Profile } = req.app.get('models')
         const startDate = String(req.query.start)
         const endDate = String(req.query.end);
 
-        const job = await Job.findOne({
-            attributes: [[sequelize.fn("sum", sequelize.col("price")), "amount"]],
-            include: {
-                model: Contract,
-                as: "Contract",
-                attributes: ["id", "ClientId"],
-                include: {
-                    model: Profile,
-                    as: "Client",
-                    attributes: ["id", "firstName", "lastName", "profession"],
-                }
-            },
-            where: {
-                paid: 1,
-                paymentDate: {
-                    [Op.between]: [startDate, endDate]
-                }
-            },
-            group: ['Contract.Client.id', 'Contract.Client.firstName', 'Contract.Client.lastName'],
-            order: [['amount', 'DESC']],
-            limit: 1
-
-        });
+        const job = await FindTheBestProfessionService.execute({ startDate, endDate })
 
         const best = {
             profession: job.Contract.Client.profession,

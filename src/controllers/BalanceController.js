@@ -1,10 +1,10 @@
-const { Op } = require("sequelize");
-const { sequelize } = require("../model");
 const RequestError = require("../exceptions/RequestError");
+const FindAUsersJobsService = require("../Services/FindAUsersJobsService");
+const UpdateAUsersBalanceService = require("../Services/UpdateAUsersBalanceService");
 
 class BalanceController {
 
-    static async Update(req, res){
+    static async Update(req, res) {
         const { Job, Contract, Profile } = req.app.get('models')
         const { user_id } = req.params
         const amount = Number(req.get("amount"));
@@ -15,22 +15,7 @@ class BalanceController {
 
         if (userProfile.type !== "client") throw new RequestError("Only clients are able to make deposits", 401);
 
-        const jobs = await Job.findAll({
-            include: {
-                model: Contract,
-                as: "Contract",
-                where: {
-                    status: {
-                        [Op.ne]: "terminated"
-                    },
-                    ClientId: userProfile.id
-                },
-            },
-            where: {
-                paid: null,
-            },
-
-        });
+        const jobs = await FindAUsersJobsService.execute(userProfile.id);
 
         if (!jobs) {
             userProfile.balance += amount;
@@ -39,17 +24,8 @@ class BalanceController {
             if (amount > (sum * 0.25)) throw new RequestError("Can't deposit more than 25% of total jobs to pay", 422);
         }
 
-        const transaction = await sequelize.transaction();
-        try {
-            await userProfile.save({
-                transaction
-            });
-            await transaction.commit();
-        } catch (error) {
-            console.error(`An error occurred: ${JSON.stringify(error)}`);
-            await transaction.rollback();
-            return res.status(500).end()
-        }
+        await UpdateAUsersBalanceService.execute(userProfile);
+
 
         res.status(200).end();
     }

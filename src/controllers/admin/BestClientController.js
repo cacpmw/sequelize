@@ -1,38 +1,16 @@
-const { Op } = require("sequelize");
-const { sequelize } = require("../../model");
+const ListBestClientsService = require("../../Services/ListBestClientsService");
+const RequestError = require("../../exceptions/RequestError");
 
 class BestClientController {
 
     static async Index(req, res) {
-        const { Job, Contract, Profile } = req.app.get('models')
         const startDate = String(req.query.start)
         const endDate = String(req.query.end);
         const limit = Number(req.query.limit);
 
-        const jobs = await Job.findAll({
-            attributes: [[sequelize.fn("sum", sequelize.col("price")), "paid"]],
-            include: {
-                model: Contract,
-                as: "Contract",
-                attributes: ["id", "ClientId"],
-                include: {
-                    model: Profile,
-                    as: "Client",
-                    attributes: ["id", "firstName", "lastName"],
-                }
+        const jobs = await ListBestClientsService.execute({ startDate, endDate, limit })
 
-            },
-            where: {
-                paid: 1,
-                paymentDate: {
-                    [Op.between]: [startDate, endDate]
-                }
-            },
-            group: ['Contract.Client.id', 'Contract.Client.firstName', 'Contract.Client.lastName'],
-            order: [['paid', 'DESC']],
-            limit: limit || 2
-
-        });
+        if (!jobs) throw new RequestError("Not Found", 404);
 
         const bestClients = jobs.map((current) => {
             return {

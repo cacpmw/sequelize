@@ -1,39 +1,29 @@
-const { Op } = require("sequelize");
 const RequestError = require("../exceptions/RequestError");
+const ListAllContractsService = require("../Services/ListAllContractsService");
+const FindAUsersContractService = require("../Services/FindAUsersContractService");
 
 class ContractController {
 
     static async Index(req, res) {
-        const { Contract } = req.app.get('models')
         const profile = req.profile;
         const { role } = profile
 
 
-        const contracts = await Contract.findAll({
-            where: {
-                status: {
-                    [Op.ne]: "terminated"
-                },
-                [role]: profile.id
-            }
-        });
+        const contracts = await ListAllContractsService.execute({
+            profileId: profile.id,
+            role
+        })
 
         if (!contracts) throw new RequestError("Not Found", 404);
         res.json(contracts)
     }
 
     static async Find(req, res) {
-        const { Contract } = req.app.get('models')
         const { id } = req.params
         const profile = req.profile;
         const { role } = profile
 
-        const contract = await Contract.findOne({
-            where: {
-                id,
-                [role]: profile.id
-            }
-        })
+        const contract = await FindAUsersContractService.execute({ id, role, profileId: profile.id })
         if (!contract) throw new RequestError("Not Found", 404);
         res.json(contract)
     }

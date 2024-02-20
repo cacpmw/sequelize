@@ -1,38 +1,12 @@
-const { Op } = require("sequelize");
 const RequestError = require("../exceptions/RequestError");
+const ListAUsersUnpaidJobs = require("../Services/ListAUsersUnpaidJobsService");
 
 class UnpaidJobController {
 
     static async Index(req, res) {
-        const { Job, Contract, Profile } = req.app.get('models')
         const profile = req.profile;
 
-        const jobs = await Job.findAll({
-            where: {
-                paid: null,
-            },
-            include: {
-                model: Contract,
-                as: "Contract",
-                where: {
-                    status: {
-                        [Op.ne]: "terminated"
-                    },
-                    [profile.role]: profile.id
-                },
-                include: {
-                    model: Profile,
-                    as: "Client",
-                    where: {
-
-                        id: profile.id
-                    }
-                }
-
-            },
-
-
-        });
+        const jobs = await ListAUsersUnpaidJobs.execute(profile)
         if (!jobs) throw new RequestError("Not Found", 404)
 
         const unpaidJobs = jobs.map((current) => (
